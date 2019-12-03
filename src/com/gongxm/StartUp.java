@@ -13,14 +13,18 @@ import java.awt.event.ItemListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Properties;
 
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
@@ -37,6 +41,7 @@ import javax.swing.JTextField;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
 import javax.swing.border.LineBorder;
+import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileSystemView;
 
 import com.gongxm.domain.TypeItem;
@@ -46,7 +51,6 @@ import com.gongxm.utils.TextUtils;
 import com.gongxm.utils.XmlWriter;
 
 public class StartUp {
-
 	private JFrame frmMybatis;
 	private JPasswordField pf_db_pwd;
 	private JTextField tf_db_user;
@@ -59,8 +63,11 @@ public class StartUp {
 	private JTextField tf_db_name;
 
 	private List<TypeItem> typeList = new ArrayList<TypeItem>();
+	private List<JCheckBox> checkBoxList = new LinkedList<JCheckBox>();
 	private List<String> tableList = new ArrayList<String>();
 	private JTextField tf_dir;
+	private int pwidth;
+	private int pheight;
 
 	/**
 	 * Launch the application.
@@ -115,6 +122,9 @@ public class StartUp {
 		scrollPane.setViewportView(panel);
 		panel.setLayout(new FlowLayout(FlowLayout.LEFT, 5, 5));
 
+		pwidth = panel.getPreferredSize().width;
+		pheight = panel.getPreferredSize().height;
+
 		JButton bt_connet_db = new JButton("\u8FDE\u63A5\u6570\u636E\u5E93");
 		bt_connet_db.setBounds(242, 161, 100, 23);
 
@@ -131,7 +141,8 @@ public class StartUp {
 		panel_1.add(label);
 
 		tf_db_url = new JTextField();
-		tf_db_url.setToolTipText("\u4F8B\u5982:mysql://localhost");
+		tf_db_url.setText("mysql://localhost:3306");
+		tf_db_url.setToolTipText("");
 		tf_db_url.setBounds(111, 29, 200, 21);
 		panel_1.add(tf_db_url);
 		tf_db_url.setColumns(10);
@@ -167,6 +178,54 @@ public class StartUp {
 		label_8.setForeground(Color.RED);
 		label_8.setBounds(10, 7, 100, 15);
 		panel_1.add(label_8);
+
+		JButton button = new JButton("\u5BFC\u5165\u914D\u7F6E...");
+		button.setBounds(205, 3, 106, 23);
+		panel_1.add(button);
+		button.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				JFileChooser ch = new JFileChooser(FileSystemView.getFileSystemView().getHomeDirectory());
+				ch.setFileSelectionMode(JFileChooser.FILES_ONLY);
+				ch.setFileFilter(new FileFilter() {
+					@Override
+					public String getDescription() {
+						return "*.properties";
+					}
+
+					@Override
+					public boolean accept(File f) {
+						String name = f.getName();
+						return name.endsWith(".properties");
+					}
+				});
+				ch.showOpenDialog(null);
+				File file = ch.getSelectedFile();
+				if (file != null) {
+					Properties prop = new Properties();
+					try {
+						prop.load(new FileInputStream(file));
+						String url = prop.getProperty("url");
+						String database = prop.getProperty("database");
+						String username = prop.getProperty("username");
+						String password = prop.getProperty("password");
+						String pojo = prop.getProperty("pojo");
+						String mapper = prop.getProperty("mapper");
+						String dir = prop.getProperty("dir");
+
+						tf_db_url.setText(url);
+						tf_db_name.setText(database);
+						tf_db_user.setText(username);
+						pf_db_pwd.setText(password);
+						tf_pojo_package.setText(pojo);
+						tf_mapper_package.setText(mapper);
+						tf_dir.setText(dir);
+					} catch (IOException e1) {
+						showMsg("配置文件加载失败!");
+					}
+
+				}
+			}
+		});
 
 		JPanel panel_2 = new JPanel();
 		panel_2.setBorder(new LineBorder(new Color(0, 0, 0)));
@@ -291,7 +350,7 @@ public class StartUp {
 
 		JLabel lab_tips = new JLabel("");
 		lab_tips.setForeground(new Color(255, 0, 0));
-		lab_tips.setBounds(120, 165, 112, 15);
+		lab_tips.setBounds(352, 165, 153, 15);
 		frmMybatis.getContentPane().add(lab_tips);
 
 		JLabel label_3 = new JLabel("\u9009\u62E9\u6587\u4EF6\u5B58\u653E\u76EE\u5F55:");
@@ -320,6 +379,20 @@ public class StartUp {
 		bt_select.setBounds(352, 403, 93, 23);
 		frmMybatis.getContentPane().add(bt_select);
 
+		JCheckBox checkBox_all = new JCheckBox("\u5168\u9009");
+		checkBox_all.setBounds(133, 161, 103, 23);
+		frmMybatis.getContentPane().add(checkBox_all);
+
+		checkBox_all.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				boolean selected = checkBox_all.isSelected();
+				for (JCheckBox cb : checkBoxList) {
+					cb.setSelected(selected);
+				}
+			}
+		});
 		int itemWidth = scrollPane_type.getWidth();
 
 		bt_add.addActionListener(new ActionListener() {
@@ -388,8 +461,7 @@ public class StartUp {
 
 		bt_connet_db.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				int line = 0;
-				panel.removeAll();
+
 				lab_tips.setText("");
 				// 获取文本框内容
 				String url = tf_db_url.getText();
@@ -426,8 +498,14 @@ public class StartUp {
 					showMsg("不支持的数据库类型!");
 					return;
 				}
-				
-				tableList.clear();//清空表集合
+
+				int line = 0;
+				panel.removeAll();
+				tableList.clear();// 清空表集合
+				checkBoxList.clear();
+				checkBox_all.setSelected(false);
+
+				panel.setPreferredSize(new Dimension(pwidth, pheight));// 恢复初始大小
 
 				lab_tips.setText("正在连接数据库...");
 				try {
@@ -441,12 +519,13 @@ public class StartUp {
 						JCheckBox cb = new JCheckBox(name);
 						int width = cb.getPreferredSize().width;
 						line += width;
+						// 如果行宽大于滚动框宽度时, 另起一行
 						if (line > spWidth - 5) {
-							line = width;
 							int panelHeight = panel.getPreferredSize().height;
 							int panelWidth = panel.getPreferredSize().width;
 							int height = cb.getPreferredSize().height;
-							panel.setPreferredSize(new Dimension(panelWidth, panelHeight + height + 5));
+							panel.setPreferredSize(new Dimension(panelWidth, panelHeight + height + 20));
+							line = width; // 新的一行的宽度
 						}
 
 						cb.addItemListener(new ItemListener() {
@@ -463,13 +542,15 @@ public class StartUp {
 							}
 						});
 
+						checkBoxList.add(cb);
+
 						panel.add(cb);
 						panel.revalidate();
 						panel.repaint();
 					}
 					lab_tips.setText("连接数据库成功!");
 				} catch (SQLException e1) {
-					showMsg("获取表信息失败!异常信息:"+e1.getMessage());
+					showMsg("获取表信息失败!异常信息:" + e1.getMessage());
 					lab_tips.setText("连接数据库失败!");
 				}
 
@@ -565,21 +646,20 @@ public class StartUp {
 				XmlParam param = new XmlParam(comIndex, decIndex, dbType, conUrl, user, password, pojoPackage,
 						mapperPackage, dirPath, tableList, typeList);
 				try {
-					XmlWriter.createXml(param);
-				} catch (IOException e1) {
-					showMsg("写xml文件出现异常,请检查!异常信息:"+e1.getMessage());
-					return;
-				}
-				// 2.根据xml文件进行逆向
-				try {
+					InputStream inputStream = XmlWriter.createXml(param);
+					// 2.根据xml文件进行逆向
 					File destDir = new File(dirPath);
 					if (!destDir.exists()) {
 						destDir.mkdirs();
 					}
-					GeneratorSqlmapTool.generator();
+					GeneratorSqlmapTool.generator(inputStream);
+				} catch (IOException e1) {
+					showMsg("写xml文件出现异常,请检查!异常信息:" + e1.getMessage());
+					return;
+
 				} catch (Exception e1) {
 					e1.printStackTrace();
-					showMsg("逆向过程出现异常,请检查!异常信息:"+e1.getMessage());
+					showMsg("逆向过程出现异常,请检查!异常信息:" + e1.getMessage());
 					return;
 				}
 				showMsg("逆向完成!");

@@ -1,6 +1,6 @@
 package com.gongxm.utils;
 
-import java.io.File;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,12 +11,11 @@ import org.mybatis.generator.internal.DefaultShellCallback;
 
 public class GeneratorSqlmapTool {
 	
-	public static void generator() throws Exception {
+	public static void generator(InputStream inputStream) throws Exception {
 		List<String> warnings = new ArrayList<String>();
 		boolean overwrite = true;
-		File configFile = new File("config.xml");
 		ConfigurationParser cp = new ConfigurationParser(warnings);
-		Configuration config = cp.parseConfiguration(configFile);
+		Configuration config =cp.parseConfiguration(inputStream);
 		DefaultShellCallback callback = new DefaultShellCallback(overwrite);
 		MyBatisGenerator myBatisGenerator = new MyBatisGenerator(config, callback, warnings);
 		myBatisGenerator.generate(null);

@@ -1,8 +1,8 @@
 package com.gongxm.utils;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 
 import com.gongxm.domain.DbType;
@@ -11,8 +11,8 @@ import com.gongxm.domain.XmlParam;
 
 public class XmlWriter {
 	
-	public static void createXml(XmlParam param) throws IOException {
-		BufferedWriter bw = new BufferedWriter(new FileWriter("config.xml"));
+	public static InputStream createXml(XmlParam param) throws IOException {
+	
 		String dirPath = param.getDirPath();
 		StringBuilder sb = new StringBuilder();
 		sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
@@ -72,8 +72,7 @@ public class XmlWriter {
 		}
 		sb.append("</context>\r\n" + 
 				"</generatorConfiguration>");
-		bw.write(sb.toString());
-		bw.close();
+		return new ByteArrayInputStream(sb.toString().getBytes());
 	}
 
 }
